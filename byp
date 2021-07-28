@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+#test case
 $inf1 = 'BYpostal.txt';
 $inf2 = 'BY.txt';
 open (file1, $inf1) or die "Can`t open the $filename";
