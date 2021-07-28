@@ -1,0 +1,66 @@
+#!/usr/bin/perl
+$inf1 = 'BYpostal.txt';
+$inf2 = 'BY.txt';
+open (file1, $inf1) or die "Can`t open the $filename";
+open (file2, $inf2) or die "Can`t open the $filename";
+@strings=<file1>;
+@strings1=<file2>;
+
+foreach $line(@strings)
+{
+@linem = split /\t/, $line;
+if (@linem[2] ne "Minsk")
+{
+$line=~/\d\d\.\d{1,6}\t\d\d\.\d{1,6}/;
+$pp=$&;chomp($pp);
+$namegeostring=@linem[2].";".$pp; # название + геопозиция
+if (exists ($namegeohash{$namegeostring})) # проверка на дубликат - существуют дупликаты по имени, гео, но с разным индексом - что это, непонятно, баг наверное.
+    {
+    print $namegeostring." exists!\n"
+    }
+    else
+    {
+    $namegeohash{$namegeostring} = @linem[1]; # если не дупликат, добавляем как ключ в хеш, а значение - индекс
+    }
+}
+}
+print "----------------------------------------\n";
+
+foreach $key_of_namegeohash(keys %namegeohash)
+{
+print $key_of_namegeohash."\n";
+}
+
+# выяснилось, что longitude у Минска в первом справочнике - 27.5667, во втором - 27.56667, т.е. нужно учитывать точность при вхождении только до 2-х знаков после запятой
+foreach $key_of_namegeohash(keys %namegeohash)
+{
+    @namegeo=split /\;/, $key_of_namegeohash; # сплитуем название/гео
+    foreach $line1(@strings1)
+	{
+	    if ($line1=~ m/\Q@namegeo[0]/)     # проверяем вхождение названия
+	    {
+		@geo=split /\t/, @namegeo[1]; $longitude=@geo[1]; $longitude=~ /\d\d\.\d\d/; $cuted_longitude=$&;
+		if ($line1=~ m/\Q$cuted_longitude/)     # проверяем вхождение гео
+		{
+#		    print $key_of_namegeohash."\n";
+		    @lm2=split /\t/, $line1;
+		    if (@lm2[14] ne '0')
+		    {
+			$superstring=@lm2[0].";".@namegeo[0].";".@lm2[1].";".$namegeohash{$key_of_namegeohash}.";".@geo[0].";".@geo[1];
+			$finalhash{$superstring}=@lm2[14];
+			print $superstring." = ".$finalhash{$superstring}."\n";
+		    }
+
+		}
+	    }
+	}
+}
+    print "---------------------------------------\n";
+sleep(1);
+
+my $outf = 'city.csv';
+open (my $file, '>>', $outf) or die "Can`t open the $filename";
+foreach my $ss (reverse sort {$finalhash{$a} <=>  $finalhash{$b}} keys %finalhash) 
+{
+print $file $ss.";".$finalhash{$ss}." \n";
+}
